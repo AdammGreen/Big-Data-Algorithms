@@ -1,0 +1,390 @@
+---
+title: "RProject_Cars"
+output: word_document
+date: "2023-12-20"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+###################################################
+
+Decision Tree
+
+
+Import Data
+```{r}
+cardata=read.csv("/Users/adamdanielgreen/Desktop/(Alogorithms) Business Statistics Project/Handin/CarPrice_Assignment.csv")
+```
+
+Turn data into factors
+```{r}
+cardata$fueltype=as.factor(cardata$fueltype)
+cardata$aspiration=as.factor(cardata$aspiration)
+cardata$doornumber=as.factor(cardata$doornumber)
+cardata$carbody=as.factor(cardata$carbody)
+cardata$drivewheel=as.factor(cardata$drivewheel)
+cardata$enginelocation=as.factor(cardata$enginelocation)
+cardata$enginetype=as.factor(cardata$enginetype)
+cardata$cylindernumber=as.factor(cardata$cylindernumber)
+cardata$fuelsystem=as.factor(cardata$fuelsystem)
+summary(cardata)
+
+```
+Setting limits
+```{r}
+cardata$pricec1=ifelse(cardata$price>40000,">40000",
+       ifelse(cardata$price>30000,">30000",
+              ifelse(cardata$price>20000,">20000",
+                     ifelse(cardata$price>10000,">10000",
+                            ">0"))))
+
+cardata$pricec1 = as.factor(cardata$pricec1)
+```
+
+
+Enable libraries
+```{r}
+library("rpart")
+library("rpart.plot")
+```
+
+Splitting training dataset and testing dataset
+```{r}
+training_data <- as.data.frame(cardata[1:165,]) 
+test_data <- as.data.frame(cardata[166:205,])
+```
+
+Run decision tree algorithm
+```{r}
+decision_tree <- rpart(pricec1~fueltype+aspiration+doornumber+carbody+drivewheel+enginelocation+wheelbase+carlength+carwidth+carheight+curbweight+enginetype+cylindernumber+enginesize+fuelsystem+boreratio+stroke+compressionratio+horsepower+peakrpm+citympg+highwaympg,
+        method="class", data=training_data,
+        control=rpart.control(minsplit=1),
+        parms=list(split="information"))
+summary(decision_tree)
+```
+
+Plotting decision tree algorithm
+```{r}
+rpart.plot(decision_tree, type=2, extra=1)
+```
+
+Predicting using decision tree algorithm
+```{r}
+new_product<-data.frame(fueltype="diesel",aspiration="turbo",doornumber="two",carbody="convertible",
+                        drivewheel="fwd",enginelocation="rear",wheelbase=98,carlength=178,carwidth=72,carheight=54,curbweight=2600,enginetype="dohc",cylindernumber="eight",enginesize=135,fuelsystem="2bbl",boreratio=3.1,stroke=3.2,compressionratio=8.2,horsepower=160,peakrpm=5000,citympg=24,highwaympg=28)
+predict(decision_tree,newdata=new_product,type="class")
+```
+
+
+Analyzing accuracy of the model
+```{r}
+t_pred=predict(decision_tree,test_data,type="class")
+
+confMat <- table(test_data$pricec1,t_pred)
+dt_accuracy <- sum(diag(confMat))/sum(confMat)
+dt_accuracy
+```
+
+
+###################################################
+
+
+Naive Bayes
+
+
+
+Splitting training dataset and testing dataset
+```{r}
+training_data <- as.data.frame(cardata[1:165,]) 
+test_data <- as.data.frame(cardata[166:205,])
+```
+
+
+Running Naive Bayes model
+```{r}
+library(e1071)
+model <- naiveBayes(pricec1~fueltype+aspiration+doornumber+carbody+drivewheel+enginelocation+wheelbase+carlength+carwidth+carheight+curbweight+enginetype+cylindernumber+enginesize+fuelsystem+boreratio+stroke+compressionratio+horsepower+peakrpm+citympg+highwaympg, cardata)
+model
+```
+
+
+Running the model on the testing dataset
+```{r}
+results <- predict(model,test_data)
+results
+```
+Analyzing its accuracy
+```{r}
+prop.table(table(test_data$pricec1,results))
+```
+Accuracy = 0.25+0.5+0.075 = 0.825
+
+
+###################################################
+
+Random Forest
+
+
+
+Random Forest
+```{r}
+#install.packages("randomForest")
+library("randomForest")
+summary(cardata)
+```
+
+```{r}
+rfmodel = randomForest(pricec1~fueltype+aspiration+doornumber+carbody+drivewheel+enginelocation+wheelbase+carlength+carwidth+carheight+curbweight+enginetype+cylindernumber+enginesize+fuelsystem+boreratio+stroke+compressionratio+horsepower+peakrpm+citympg+highwaympg,data=cardata, importance=TRUE)
+rfmodel
+
+
+importance(rfmodel)
+varImpPlot(rfmodel)
+```
+
+###################################################
+
+
+
+Regression Analysis
+
+```{r}
+#cardata=read.csv("/Users/adamdanielgreen/Desktop/CarPrice_Assignment.csv")
+cardata
+```
+
+```{r}
+
+library('readr')  # For reading CSV files
+library('lattice')  # For scatterplot matrix
+
+# Optional: Data Transformation (decided to exclude)
+# car_data$price <- log(car_data$price)
+# car_data$horsepower <- log(car_data$horsepower)
+
+
+# A summary of the dataset
+summary(cardata)
+
+# Pair-wise relationships of the variables: the scatterplot matrix
+splom(~cardata[c('wheelbase', 'enginesize', 'horsepower', 'citympg', 'highwaympg', 'price')], groups=NULL, data=cardata)
+
+# Estimation of the model (linear regression)
+# Here we are: Predicting price based on horsepower, enginesize, and mpg
+model <- lm(price ~ horsepower + enginesize + citympg + highwaympg, data=cardata)
+summary(model)
+
+```
+
+```{r}
+# Sample Data for Prediction 
+horsepower <- 102  # Example variable 1
+enginesize <- 120   # Example variable 2
+citympg <- 21   # Example variable 3
+highwaympg <- 23   # Example variable 4
+
+prediction_data <- data.frame(horsepower, enginesize, citympg, highwaympg)
+
+#Prediction: 95% confidence interval
+conf_int_prediction <- predict(model, prediction_data, level = .95, interval = "confidence")
+conf_int_prediction
+```
+
+```{r}
+# Diagnostics
+
+# Evaluating the Residuals: should be centered on zero with a constant variance
+with(model, {
+  plot(fitted.values, residuals, ylim = c(-40, 40)) 
+  points(c(min(fitted.values), max(fitted.values)), c(0, 0), type = "l")
+})
+
+# Evaluating the Normality Assumption of residuals
+hist(model$residuals, main="Histogram of Residuals")
+
+# Normal Q-Q Plot
+qqnorm(model$residuals, ylab="Residuals")
+qqline(model$residuals)
+```
+```{r}
+#checking the predictibility score
+
+library(readr)  
+
+model <- lm(price ~ horsepower + enginesize + citympg + highwaympg, data = cardata)
+
+model_summary <- summary(model)
+print(model_summary)
+
+# R-squared and Adjusted R-squared
+r_squared <- model_summary$r.squared
+adj_r_squared <- model_summary$adj.r.squared
+
+# F-statistic and its p-value
+f_statistic <- model_summary$fstatistic
+f_pvalue <- pf(f_statistic[1], f_statistic[2], f_statistic[3], lower.tail = FALSE)
+
+cat("R-squared:", r_squared, "\n")
+cat("Adjusted R-squared:", adj_r_squared, "\n")
+cat("F-statistic:", f_statistic[1], "\n")
+cat("F-statistic p-value:", f_pvalue, "\n")
+```
+
+
+###################################################
+
+
+Logistic Regression
+
+```{r}
+## Logistic Regression with R for Car Dataset
+
+# Load the dataset and have a view
+#cardata <- read.csv("/Users/adamdanielgreen/Desktop/CarPrice_Assignment.csv")
+summary(cardata)
+
+# Ensure you have a binary variable for logistic regression
+# For example, creating a binary variable 'HighPrice' (1 if price > median price, 0 otherwise)
+cardata$HighPrice <- as.factor(ifelse(cardata$price > median(cardata$price), 1, 0))
+summary(cardata)
+
+```
+
+```{r}
+# The dataset is divided into two: a training set and a test set
+set.seed(123)  # for reproducibility
+train_indices <- sample(1:nrow(cardata), 0.7 * nrow(cardata))  # 70% for training
+cardata_training <- cardata[train_indices, ]
+cardata_test <- cardata[-train_indices, ]
+```
+
+```{r}
+# Model estimation
+logit_model <- glm(HighPrice ~ horsepower + enginesize + citympg + highwaympg+fueltype+carbody, 
+                   data = cardata_training, family = binomial(link = "logit"))
+summary(logit_model)
+
+```
+
+```{r}
+# Variable Importance
+#install.packages("caret")
+library("caret")
+varImp(logit_model)
+```
+
+```{r}
+# Diagnostics
+# Classification Rate
+prediction_test <- predict(logit_model, newdata = cardata_test, type = "response")
+prop.table(table(cardata_test$HighPrice, prediction_test > 0.5))
+```
+
+
+###################################################
+
+(We tried to do a KNN but couldn't make it work entirely as we never learnt it in class)
+
+K-nearest neighbors
+
+```{r}
+library(class)      # For knn
+library(caret)      # For data pre-processing and splitting
+library(dplyr)      # For data manipulation
+
+
+# cardata <- read.csv('/Users/adamdanielgreen/Desktop/CarPrice_Assignment.csv')
+
+# Pre-process the data
+# Convert factors to numeric 
+#cardata$carCompany <- as.numeric(factor(cardata$carCompany))
+cardata$fueltype <- as.numeric(factor(cardata$fueltype))
+cardata$aspiration <- as.numeric(factor(cardata$aspiration))
+# ... continue for all factor variables
+
+```
+
+```{r}
+# Select only numeric columns
+car_data_numeric <- cardata %>% 
+  select_if(~is.numeric(.))
+```
+
+```{r}
+# Scale the numeric variables
+numeric_columns <- sapply(cardata, is.numeric)
+cardata[numeric_columns] <- scale(cardata[numeric_columns])
+```
+
+```{r}
+# Split the dataset into training and testing sets
+set.seed(123)  # for reproducibility
+training_indices <- createDataPartition(car_data_numeric$price, p = 0.8, list = FALSE)
+train_data <- car_data_numeric[training_indices, ]
+test_data <- car_data_numeric[-training_indices, ]
+```
+
+
+```{r}
+# Remove any rows with NA values
+train_data <- train_data[complete.cases(train_data), ]
+test_data <- test_data[complete.cases(test_data), ]
+
+
+train_data
+```
+
+```{r}
+library(FNN)  # For knn regression
+
+
+
+k <- 5
+knn_pred <- knn.reg(train = train_data[, -ncol(train_data)], test = test_data[, -ncol(test_data)], 
+                        y = train_data$price, k = k)$pred
+#knn_pred
+```
+
+```{r}
+# Evaluate the model
+
+actual_prices <- test_data$price
+
+predicted_prices <- as.numeric(levels(knn_pred))[knn_pred]  # Convert factors to original numeric values if 'price' is a factor
+
+actual_prices
+predicted_prices
+```
+
+```{r}
+RMSE <- sqrt(mean((predicted_prices - actual_prices)^2))
+print(RMSE)
+
+```
+
+```{r}
+# Ensure that predicted_prices is a factor with levels corresponding to actual_prices
+predicted_prices <- factor(predicted_prices, levels = levels(actual_prices))
+
+# our price is not a factor so this doesnt work
+confusion_matrix <- table(actual_prices, predicted_prices)
+print(confusion_matrix)
+
+# Calculate classification accuracy
+accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
+print(accuracy)
+```
+
+
+
+
+
+
+
+
+
+
+
+

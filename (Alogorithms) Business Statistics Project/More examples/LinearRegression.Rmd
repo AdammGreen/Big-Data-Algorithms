@@ -1,0 +1,58 @@
+---
+title: "LinearRegression"
+output: html_document
+date: "2024-01-15"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r}
+## Logistic Regression with R for Car Dataset
+
+# Load the dataset and have a view
+cardata <- read.csv("/Users/adamdanielgreen/Desktop/Handin/CarPrice_Assignment.csv")
+summary(cardata)
+
+# Ensure you have a binary variable for logistic regression
+# For example, creating a binary variable 'HighPrice' (1 if price > median price, 0 otherwise)
+cardata$HighPrice <- as.factor(ifelse(cardata$price > median(cardata$price), 1, 0))
+summary(cardata)
+
+```
+
+```{r}
+# The dataset is divided into two: a training set and a test set
+set.seed(123)  # for reproducibility
+train_indices <- sample(1:nrow(cardata), 0.7 * nrow(cardata))  # 70% for training
+cardata_training <- cardata[train_indices, ]
+cardata_test <- cardata[-train_indices, ]
+```
+
+
+```{r}
+# Model estimation
+logit_model <- glm(HighPrice ~ horsepower + enginesize + citympg + highwaympg+fueltype+carbody, 
+                   data = cardata_training, family = binomial(link = "logit"))
+summary(logit_model)
+
+```
+
+
+```{r}
+# Variable Importance
+#install.packages("caret")
+library("caret")
+varImp(logit_model)
+```
+
+
+```{r}
+# Diagnostics
+# Classification Rate
+prediction_test <- predict(logit_model, newdata = cardata_test, type = "response")
+prop.table(table(cardata_test$HighPrice, prediction_test > 0.5))
+```

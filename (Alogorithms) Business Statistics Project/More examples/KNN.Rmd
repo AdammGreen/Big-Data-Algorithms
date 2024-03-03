@@ -1,0 +1,112 @@
+---
+title: "KNN"
+output: html_document
+date: "2024-01-15"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(class)      # For knn
+library(caret)      # For data pre-processing and splitting
+library(dplyr)      # For data manipulation
+
+# Assuming your data is loaded into a variable called 'cardata'
+
+# Load the dataset
+cardata <- read.csv('/Users/adamdanielgreen/Desktop/CarPrice_Assignment.csv')
+
+# Pre-process the data
+# Convert factors to numeric encoding if needed
+#cardata$carCompany <- as.numeric(factor(cardata$carCompany))
+cardata$fueltype <- as.numeric(factor(cardata$fueltype))
+cardata$aspiration <- as.numeric(factor(cardata$aspiration))
+# ... continue for all factor variables
+
+```
+
+```{r}
+# Select only numeric columns
+car_data_numeric <- cardata %>% 
+  select_if(~is.numeric(.))
+```
+
+```{r}
+# Scale the numeric variables
+numeric_columns <- sapply(cardata, is.numeric)
+cardata[numeric_columns] <- scale(cardata[numeric_columns])
+```
+
+
+```{r}
+# Split the dataset into training and testing sets
+set.seed(123)  # for reproducibility
+training_indices <- createDataPartition(car_data_numeric$price, p = 0.8, list = FALSE)
+train_data <- car_data_numeric[training_indices, ]
+test_data <- car_data_numeric[-training_indices, ]
+```
+
+
+
+```{r}
+# Remove any rows with NA, NaN or Inf values
+train_data <- train_data[complete.cases(train_data), ]
+test_data <- test_data[complete.cases(test_data), ]
+
+
+train_data
+```
+
+
+```{r}
+library(FNN)  # For knn regression
+
+
+
+k <- 5
+knn_pred <- knn.reg(train = train_data[, -ncol(train_data)], test = test_data[, -ncol(test_data)], 
+                        y = train_data$price, k = k)$pred
+
+#knn_pred
+```
+
+
+```{r}
+# Evaluate the model
+# For regression, you might want to calculate RMSE or another suitable metric
+# For classification, you might want to create a confusion matrix
+actual_prices <- test_data$price
+
+predicted_prices <- as.numeric(levels(knn_pred))[knn_pred]  # Convert factors to original numeric values if 'price' is a factor
+
+actual_prices
+predicted_prices
+```
+
+
+```{r}
+# If 'price' is a continuous value, calculate RMSE
+RMSE <- sqrt(mean((predicted_prices - actual_prices)^2))
+print(RMSE)
+
+# If 'price' is categorical, evaluate using
+
+```
+
+```{r}
+# Ensure that predicted_prices is a factor with levels corresponding to actual_prices
+predicted_prices <- factor(predicted_prices, levels = levels(actual_prices))
+
+# Assuming 'price' is a factor and you have already categorized it accordingly
+confusion_matrix <- table(actual_prices, predicted_prices)
+print(confusion_matrix)
+
+# Calculate classification accuracy
+accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
+print(accuracy)
+```
+
+
+

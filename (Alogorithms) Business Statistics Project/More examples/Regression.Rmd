@@ -1,0 +1,105 @@
+---
+title: "Regression"
+
+output: html_document
+date: "2024-01-15"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r cars}
+cardata=read.csv("/Users/adamdanielgreen/Desktop/Handin/CarPrice_Assignment.csv")
+cardata
+```
+
+```{r}
+### Regression Analysis for Car Price Dataset
+
+library('readr')  # For reading CSV files
+library('lattice')  # For scatterplot matrix
+
+# Optional: Data Transformation
+# car_data$price <- log(car_data$price)
+# car_data$horsepower <- log(car_data$horsepower)
+# Additional transformations can be added as needed
+
+# A summary of the dataset
+summary(cardata)
+
+# Pair-wise relationships of the variables: the scatterplot matrix
+splom(~cardata[c('wheelbase', 'enginesize', 'horsepower', 'citympg', 'highwaympg', 'price')], groups=NULL, data=cardata)
+
+# Estimation of the model
+# Example: Predicting price based on horsepower, enginesize, and mpg
+model <- lm(price ~ horsepower + enginesize + citympg + highwaympg, data=cardata)
+summary(model)
+
+# Further analysis and model diagnostics can be added as needed
+
+```
+
+```{r}
+# Sample Data for Prediction (modify according to your project's context)
+horsepower <- 102  # Example variable 1
+enginesize <- 120   # Example variable 2
+citympg <- 21   # Example variable 3
+highwaympg <- 23   # Example variable 4
+
+prediction_data <- data.frame(horsepower, enginesize, citympg, highwaympg)
+
+# Assuming 'my_model' is your regression model
+#Prediction: 95% confidence interval
+conf_int_prediction <- predict(model, prediction_data, level = .95, interval = "confidence")
+conf_int_prediction
+```
+```{r}
+# Diagnostics
+
+# Evaluating the Residuals: should be centered on zero with a constant variance
+with(model, {
+  plot(fitted.values, residuals, ylim = c(-40, 40)) 
+  points(c(min(fitted.values), max(fitted.values)), c(0, 0), type = "l")
+})
+
+# Evaluating the Normality Assumption of residuals
+hist(model$residuals, main="Histogram of Residuals")
+
+# Normal Q-Q Plot
+qqnorm(model$residuals, ylab="Residuals")
+qqline(model$residuals)
+
+```
+
+```{r}
+# Loading necessary libraries
+library(readr)  # For reading CSV files
+
+
+# Fitting the linear regression model
+model <- lm(price ~ horsepower + enginesize + citympg + highwaympg, data = cardata)
+
+# Summary of the model to get coefficients and basic stats
+model_summary <- summary(model)
+print(model_summary)
+
+# Extracting key performance metrics
+# R-squared and Adjusted R-squared
+r_squared <- model_summary$r.squared
+adj_r_squared <- model_summary$adj.r.squared
+
+# F-statistic and its p-value
+f_statistic <- model_summary$fstatistic
+f_pvalue <- pf(f_statistic[1], f_statistic[2], f_statistic[3], lower.tail = FALSE)
+
+# Displaying the metrics
+cat("R-squared:", r_squared, "\n")
+cat("Adjusted R-squared:", adj_r_squared, "\n")
+cat("F-statistic:", f_statistic[1], "\n")
+cat("F-statistic p-value:", f_pvalue, "\n")
+
+```
+
